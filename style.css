@@ -1,0 +1,28 @@
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+#img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1000px;
+  height: 750px;
+  z-index: 1000;
+  visibility: hidden;
+}
+
+.map {
+  flex: 1;
+  height: 100%;
+  z-index: 0;
+  position: relative;
+}
