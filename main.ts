@@ -29,12 +29,13 @@ var vectorSource = new sVector({
   features: features.icons
 });
 
+
+
 var vectorLayer = new lVector({
   source: vectorSource
 });
 
 var map = new ol.Map({
-  /*controls: defaultControls().extend([new FullScreen()]),*/
   layers: [
     new TileLayer({
       source: new OSM(),
@@ -50,73 +51,54 @@ var map = new ol.Map({
   interactions: defaultInteractions({keyboard: false}).extend([new KeyboardZoom()]),
 });
 
-var imgs; var index;
+var bb = 0;
 
 map.on('click', function(evt) {
-    var f = map.forEachFeatureAtPixel(
-        evt.pixel,
-        function(ft, layer){return ft;}
-    );
-    if (f && f.get('type') == 'click') {
-        var geometry = f.getGeometry();
-        var coord = geometry.getCoordinates();
-        
-        imgs = f.get('images'); index = 0;
-        (document.getElementById('img') as HTMLImageElement).src = imgs[0];
-        (document.getElementById('img') as HTMLImageElement).style.visibility = "visible";
-    } 
+  if (bb == 1){
+    var coords = toLonLat(evt.coordinate);
+    var lat = coords[1];
+    var lon = coords[0];
+    bb = 0;
+    document.getElementById("map").style.cursor = "";
+    document.getElementById("add_btn").style.cursor = "";
+
+    var ft = new ol.Feature({
+      geometry: new Point(fromLonLat([lon, lat])),
+    })
+
+    ft.setStyle(iconStyle)
+  
+    var vss = new sVector({
+      features: [ft],
+    });
+    
+    var vll = new lVector({
+      source: vss,
+    });
+    
+    map.addLayer(vll);
+  }
 });
 
-map.on('contextmenu', function(evt){
-  var coords = toLonLat(evt.coordinate);
-  var lat = coords[1];
-  var lon = coords[0];
-  var locTxt = String(lat) + " " + String(lon);
-  alert(locTxt)
-});
-
-$(document).keydown(function(e) {
-  if (e.key === "Escape") { 
-    img.style.visibility = "hidden";
-    img.removeAttribute('src');
-    document.getElementById('map').focus();
-  }
-
-  if (e.key === "ArrowRight") { 
-    if (typeof imgs[index + 1] !== "undefined"){
-      index += 1;
-      (document.getElementById('img') as HTMLImageElement).src = imgs[index];
-    }
-  }
-
-  if (e.key === "ArrowLeft") { 
-    if (typeof imgs[index - 1] !== "undefined"){
-      index -= 1;
-      (document.getElementById('img') as HTMLImageElement).src = imgs[index];
-    }
+$(document).on('keydown', function(e) {
+  if (e.key === "a") { 
+    document.getElementById("map").style.cursor = "url('assets/img/icon.png'), auto";
+    document.getElementById("add_btn").style.cursor = "url('assets/img/icon.png'), auto";
+    bb = 1;
   }
 });
 
 map.on('pointermove', function(e){
   var pixel = map.getEventPixel(e.originalEvent);
   var hit = map.hasFeatureAtPixel(pixel);
-  map.getViewport().style.cursor = hit ? 'pointer' : '';
+  map.getViewport().style.cursor = hit ? 'marker' : '';
 });
 
 document.getElementById('map').focus();
 const img = (document.getElementById('img') as HTMLImageElement);
 
-function CenterImage(){
-  img.style.height = String($(window).height()*(9/10))+"px";
-  img.style.width = String((img.naturalWidth*img.height)/img.naturalHeight)+"px"
-
-  img.style.marginLeft = String(-(img.width/2))+"px";
-  img.style.marginTop = String(-(img.height/2))+"px";
-}
-
-img.onload = CenterImage;
-window.onresize = CenterImage;
-CenterImage();
-img.style.position = "absolute"
-img.style.top = "50%";
-img.style.left = "50%";
+$("#add_btn").on('click', function() {
+  document.getElementById("map").style.cursor = "url('assets/img/icon.png'), auto";
+  document.getElementById("add_btn").style.cursor = "url('assets/img/icon.png'), auto";
+  bb = 1;
+})
