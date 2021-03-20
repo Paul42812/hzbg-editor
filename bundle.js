@@ -31133,7 +31133,15 @@
             anchor: [0.5, 18],
             anchorXUnits: 'fraction',
             anchorYUnits: 'pixels',
-            src: 'https://www.dropbox.com/s/fx852dq393bwjj3/icon.png?dl=1'
+            src: 'assets/img/rico.png'
+        }))
+    });
+    var activeStyle = new Style({
+        image: new Icon(({
+            anchor: [0.5, 18],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'pixels',
+            src: 'assets/img/bico.png'
         }))
     });
     features.icons.forEach(function (element) {
@@ -31159,34 +31167,14 @@
             maxZoom: 18,
         }),
         interactions: defaults({ keyboard: false }).extend([new KeyboardZoom()]),
+        controls: defaults$1({ attribution: false })
     });
-    var bb = 0;
     map.on('click', function (evt) {
-        if (bb == 1) {
-            var coords = toLonLat(evt.coordinate);
-            var lat = coords[1];
-            var lon = coords[0];
-            bb = 0;
-            document.getElementById("map").style.cursor = "";
-            document.getElementById("add_btn").style.cursor = "";
-            var ft = new Feature({
-                geometry: new Point(fromLonLat([lon, lat])),
-            });
-            ft.setStyle(iconStyle);
-            var vss = new VectorSource({
-                features: [ft],
-            });
-            var vll = new VectorLayer({
-                source: vss,
-            });
-            map.addLayer(vll);
-        }
     });
     $(document).on('keydown', function (e) {
         if (e.key === "a") {
             document.getElementById("map").style.cursor = "url('assets/img/icon.png'), auto";
             document.getElementById("add_btn").style.cursor = "url('assets/img/icon.png'), auto";
-            bb = 1;
         }
     });
     map.on('pointermove', function (e) {
@@ -31194,12 +31182,45 @@
         var hit = map.hasFeatureAtPixel(pixel);
         map.getViewport().style.cursor = hit ? 'marker' : '';
     });
+    var cid = 0;
+    var points = [];
+    var obj = {};
+    obj.points = points;
+    map.on('contextmenu', function (e) {
+        var coords = toLonLat(e.coordinate);
+        var lat = coords[1];
+        var lon = coords[0];
+        document.getElementById("map").style.cursor = "";
+        var ft = new Feature({
+            geometry: new Point(fromLonLat([lon, lat])),
+        });
+        ft.setStyle(activeStyle);
+        var vss = new VectorSource({
+            features: [ft],
+        });
+        var vll = new VectorLayer({
+            source: vss,
+        });
+        map.addLayer(vll);
+        var lonlat = [lon, lat];
+        var point = {
+            "id": cid,
+            "lonlat": lonlat,
+            "text": "TEXT"
+        };
+        obj.points.push(point);
+        cid += 1;
+        updatelist();
+    });
+    /* saveFile("Example.txt", "data:attachment/text", "Hello, world."); */
+    function updatelist() {
+        var a = document.getElementById('lst');
+        a.innerHTML = "";
+        obj['points'].forEach(function (element) {
+            a.innerHTML += "<p>" + element.id + " | " + element.lonlat + "</p>";
+        });
+    }
     document.getElementById('map').focus();
     document.getElementById('img');
-    $("#add_btn").on('click', function () {
-        document.getElementById("map").style.cursor = "url('assets/img/icon.png'), auto";
-        document.getElementById("add_btn").style.cursor = "url('assets/img/icon.png'), auto";
-        bb = 1;
-    });
 
 }());

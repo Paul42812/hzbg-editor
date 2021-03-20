@@ -26,3 +26,34 @@ html, body {
   z-index: 0;
   position: relative;
 }
+
+#zk {
+  width: 30%;
+  height: 100%;
+  background-color: rgb(120,120,120);
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: 10000;
+}
+
+#zk h2 {
+  text-align: center;
+  margin: 0px;
+  margin-top: 10px;
+}
+
+#zk p {
+  text-align: center;
+  position: relative;
+  padding: 10px;
+  margin: 10px;
+  background-color: white;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+#lst {
+  overflow-y: auto;
+  height: 95%;
+}
