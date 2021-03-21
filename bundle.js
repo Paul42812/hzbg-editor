@@ -31144,6 +31144,14 @@
             src: 'assets/img/bico.png'
         }))
     });
+    var currentStyle = new Style({
+        image: new Icon(({
+            anchor: [0.5, 18],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'pixels',
+            src: 'assets/img/gico.png'
+        }))
+    });
     features.icons.forEach(function (element) {
         element.setStyle(iconStyle);
     });
@@ -31151,12 +31159,14 @@
         features: features.icons
     });
     var vectorLayer = new VectorLayer({
-        source: vectorSource
+        source: vectorSource,
+        mode: "stay"
     });
     var map = new Map({
         layers: [
             new TileLayer({
                 source: new OSM(),
+                mode: "stay"
             }),
             vectorLayer
         ],
@@ -31172,10 +31182,7 @@
     map.on('click', function (evt) {
     });
     $(document).on('keydown', function (e) {
-        if (e.key === "a") {
-            document.getElementById("map").style.cursor = "url('assets/img/icon.png'), auto";
-            document.getElementById("add_btn").style.cursor = "url('assets/img/icon.png'), auto";
-        }
+        if (e.key === "d") ;
     });
     map.on('pointermove', function (e) {
         var pixel = map.getEventPixel(e.originalEvent);
@@ -31183,6 +31190,7 @@
         map.getViewport().style.cursor = hit ? 'marker' : '';
     });
     var cid = 0;
+    var currentid = 0;
     var points = [];
     var obj = {};
     obj.points = points;
@@ -31191,17 +31199,6 @@
         var lat = coords[1];
         var lon = coords[0];
         document.getElementById("map").style.cursor = "";
-        var ft = new Feature({
-            geometry: new Point(fromLonLat([lon, lat])),
-        });
-        ft.setStyle(activeStyle);
-        var vss = new VectorSource({
-            features: [ft],
-        });
-        var vll = new VectorLayer({
-            source: vss,
-        });
-        map.addLayer(vll);
         var lonlat = [lon, lat];
         var point = {
             "id": cid,
@@ -31211,15 +31208,86 @@
         obj.points.push(point);
         cid += 1;
         updatelist();
+        ploticons();
     });
-    /* saveFile("Example.txt", "data:attachment/text", "Hello, world."); */
+    function ploticons() {
+        map.getLayers().getArray().slice().forEach(function (layer) {
+            if (layer && layer.get('mode') !== 'stay') {
+                map.removeLayer(layer);
+            }
+        });
+        obj['points'].forEach(function (element) {
+            var ft = new Feature({
+                geometry: new Point(fromLonLat([element.lonlat[0], element.lonlat[1]])),
+            });
+            if (element.id + 1 == cid) {
+                ft.setStyle(currentStyle);
+                currentid = element.id;
+                document.getElementById(element.id).style.backgroundColor = "lightgray";
+            }
+            else {
+                ft.setStyle(activeStyle);
+                document.getElementById(element.id).style.backgroundColor = "white";
+            }
+            var vss = new VectorSource({
+                features: [ft],
+            });
+            var vll = new VectorLayer({
+                source: vss,
+            });
+            map.addLayer(vll);
+        });
+    }
+    /* saveFile("data.json", "data:attachment/text", "Hello, world."); */
     function updatelist() {
+        map.getLayers().getArray().slice().forEach(function (layer) {
+            if (layer && layer.get('mode') !== 'stay') {
+                map.removeLayer(layer);
+            }
+        });
         var a = document.getElementById('lst');
         a.innerHTML = "";
         obj['points'].forEach(function (element) {
-            a.innerHTML += "<p>" + element.id + " | " + element.lonlat + "</p>";
+            a.innerHTML += "<p id='" + element.id + "' class='hbtn'>" + element.id + " | " + element.lonlat + "</p>";
+        });
+        var elements = document.getElementsByClassName("hbtn");
+        Array.from(elements).forEach(function (element) {
+            element.addEventListener('click', function () {
+                obj['points'].forEach(function (e) {
+                    var ft = new Feature({
+                        geometry: new Point(fromLonLat([e.lonlat[0], e.lonlat[1]])),
+                    });
+                    if (e.id == element.id) {
+                        ft.setStyle(currentStyle);
+                        currentid = e.id;
+                        document.getElementById(e.id).style.backgroundColor = "lightgray";
+                    }
+                    else {
+                        ft.setStyle(activeStyle);
+                        document.getElementById(e.id).style.backgroundColor = "white";
+                    }
+                    var vss = new VectorSource({
+                        features: [ft],
+                    });
+                    var vll = new VectorLayer({
+                        source: vss,
+                    });
+                    map.addLayer(vll);
+                });
+            });
         });
     }
+    $("button#remove").on('click', function () {
+        map.getLayers().getArray().slice().forEach(function (layer) {
+            if (layer && layer.get('mode') !== 'stay') {
+                map.removeLayer(layer);
+            }
+        });
+        delete obj.points[currentid];
+        currentid = -1;
+        updatelist();
+        ploticons();
+    });
     document.getElementById('map').focus();
     document.getElementById('img');
 
