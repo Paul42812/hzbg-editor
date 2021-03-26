@@ -13,6 +13,11 @@ import Collection from 'ol/Collection';
 import {Attribution,FullScreen, defaults as defaultControls} from 'ol/control';
 import {toSize} from 'ol/size';
 
+var cid = 0;
+var currentid = 0;
+var points = []
+
+/* Styles */
 var iconStyle = new Style({
   image: new Icon(({
     anchor: [0.5, 18], 
@@ -52,14 +57,14 @@ var vectorSource = new sVector({
 
 var vectorLayer = new lVector({
   source: vectorSource,
-  mode: "stay"
+  type: "stay"
 });
 
 var map = new ol.Map({
   layers: [
     new TileLayer({
       source: new OSM(),
-      mode: "stay"
+      type: "stay"
     }),
     vectorLayer
   ],
@@ -73,10 +78,51 @@ var map = new ol.Map({
   controls: defaultControls({attribution: false})
 });
 
-var bb = 0;
-
 map.on('click', function(evt) {
+  var f = map.forEachFeatureAtPixel(
+      evt.pixel,
+      function(ft, layer){return ft;}
+  );
+  if (f && f.get('type') == 'added') {
+      var geometry = f.getGeometry();
+      var coord = geometry.getCoordinates();
+      var bid = f.get('id');
+      
+      obj['points'].forEach(element => {
+        var ft = new ol.Feature({
+          id: element.id,
+          geometry: new Point(fromLonLat([element.lonlat[0], element.lonlat[1]])),
+          type: "added",
+          text: element.text,
+        })
+        
+        if (element.id == bid){
+          ft.setStyle(currentStyle)
+          currentid = element.id;
+          document.getElementById(element.id).style.backgroundColor = "lightgray";
+        } else {
+          ft.setStyle(activeStyle)
+          document.getElementById(element.id).style.backgroundColor = "white";
+        }
+      
+        var vss = new sVector({
+          features: [ft],
+        });
+        
+        var vll = new lVector({
+          source: vss,
+        });
+        
+        map.addLayer(vll);
+      });
 
+  } 
+});
+
+$(document).on('keydown', function(e) {
+  if (e.key === "d") { 
+    
+  }
 });
 
 function saveFile (name, type, data) {
@@ -92,25 +138,26 @@ function saveFile (name, type, data) {
   a.remove();
 }
 
-$(document).on('keydown', function(e) {
-  if (e.key === "d") { 
-    
-  }
-  
-});
-
-map.on('pointermove', function(e){
-  var pixel = map.getEventPixel(e.originalEvent);
-  var hit = map.hasFeatureAtPixel(pixel);
-  map.getViewport().style.cursor = hit ? 'marker' : '';
-});
-
-var cid = 0;
-var currentid = 0;
-var points = []
-
 var obj: any = {};
 obj.points = points;
+
+$("button#remove").on('click', function() {
+  delete obj.points[currentid];
+  update();
+});
+
+
+map.on('pointermove', function(e){
+  map.getViewport().style.cursor = 'default';
+  var pixel = map.getEventPixel(e.originalEvent);
+  var hit = map.hasFeatureAtPixel(pixel);
+  
+  map.forEachFeatureAtPixel(pixel, function(feature, layer) {
+    if (feature.get('type') == "added"){
+      map.getViewport().style.cursor = 'pointer';
+    }
+  });
+});
 
 map.on('contextmenu', function(e){
     var coords = toLonLat(e.coordinate);
@@ -120,55 +167,21 @@ map.on('contextmenu', function(e){
 
     var lonlat = [lon, lat];
     var point = {
+      "type": "click",
       "id": cid,
       "lonlat": lonlat,
       "text": "TEXT"
     }
+
     obj.points.push(point)
     cid += 1;
 
-    updatelist();
-    ploticons();
+    update();
 });
 
-function ploticons(){
+function update(){
   map.getLayers().getArray().slice().forEach(layer => {
-    if (layer && layer.get('mode') !== 'stay') {
-      map.removeLayer(layer);
-    }
-  });
-
-  obj['points'].forEach(element => {
-    var ft = new ol.Feature({
-      geometry: new Point(fromLonLat([element.lonlat[0], element.lonlat[1]])),
-    })
-    
-    if (element.id + 1 == cid){
-      ft.setStyle(currentStyle)
-      currentid = element.id;
-      document.getElementById(element.id).style.backgroundColor = "lightgray";
-    } else {
-      ft.setStyle(activeStyle)
-      document.getElementById(element.id).style.backgroundColor = "white";
-    }
-  
-    var vss = new sVector({
-      features: [ft],
-    });
-    
-    var vll = new lVector({
-      source: vss,
-    });
-    
-    map.addLayer(vll);
-  });
-}
-
-/* saveFile("data.json", "data:attachment/text", "Hello, world."); */
-
-function updatelist(){
-  map.getLayers().getArray().slice().forEach(layer => {
-    if (layer && layer.get('mode') !== 'stay') {
+    if (layer && layer.get('type') !== 'stay') {
       map.removeLayer(layer);
     }
   });
@@ -177,7 +190,7 @@ function updatelist(){
   a.innerHTML = "";
 
   obj['points'].forEach(element => {
-    a.innerHTML += "<p id='"+ element.id +"' class='hbtn'>"+ element.id + " | " + element.lonlat +"</p>"
+    a.innerHTML += "<p id='"+ element.id +"' class='hbtn'>"+ element.id + "</p>"
   });
 
   var elements = document.getElementsByClassName("hbtn");
@@ -207,26 +220,40 @@ function updatelist(){
         });
 
         map.addLayer(vll);        
-
-        
       });
     });
   });
-};
 
-$("button#remove").on('click', function() {
-
-  map.getLayers().getArray().slice().forEach(layer => {
-    if (layer && layer.get('mode') !== 'stay') {
-      map.removeLayer(layer);
+  obj['points'].forEach(element => {
+    var ft = new ol.Feature({
+      id: element.id,
+      geometry: new Point(fromLonLat([element.lonlat[0], element.lonlat[1]])),
+      type: "added",
+      text: element.text,
+    })
+    
+    if (element.id + 1 == cid){
+      ft.setStyle(currentStyle)
+      currentid = element.id;
+      document.getElementById(element.id).style.backgroundColor = "lightgray";
+    } else {
+      ft.setStyle(activeStyle)
+      document.getElementById(element.id).style.backgroundColor = "white";
     }
+  
+    var vss = new sVector({
+      features: [ft],
+    });
+    
+    var vll = new lVector({
+      source: vss,
+    });
+    
+    map.addLayer(vll);
   });
+}
 
-  delete obj.points[currentid];
-  currentid = -1;
-  updatelist();
-  ploticons();
-});
+/* saveFile("data.json", "data:attachment/text", "Hello, world."); */
 
 document.getElementById('map').focus();
 const img = (document.getElementById('img') as HTMLImageElement);

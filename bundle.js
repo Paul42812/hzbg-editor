@@ -31098,7 +31098,6 @@
     var icons = [
         new Feature({
             geometry: new Point(fromLonLat([15.69526, 48.28461])),
-            type: 'click',
             text: "0",
             images: [
                 "assets/img/moon.png"
@@ -31106,7 +31105,6 @@
         }),
         new Feature({
             geometry: new Point(fromLonLat([15.69476, 48.28529])),
-            type: 'click',
             text: "1",
             images: [
                 "assets/Auring/DSC_1455.JPG",
@@ -31115,12 +31113,11 @@
         }),
         new Feature({
             geometry: new Point(fromLonLat([15.69476, 48.28729])),
-            type: 'click',
             text: "2",
             images: [
-                "assets/Auring/20191122_090245.jpg",
-                "assets/Auring/20190825_113825.jpg",
-                "assets/Auring/DSC_1453.JPG"
+                "https://raw.githubusercontent.com/Paul42812/hzbg/master/assets/Auring/20191122_090245.jpg",
+                "https://raw.githubusercontent.com/Paul42812/hzbg/master/assets/Auring/20190825_113825.jpg",
+                "https://raw.githubusercontent.com/Paul42812/hzbg/master/assets/Auring/DSC_1453.JPG"
             ]
         })
     ];
@@ -31128,6 +31125,10 @@
         icons: icons
     };
 
+    var cid = 0;
+    var currentid = 0;
+    var points = [];
+    /* Styles */
     var iconStyle = new Style({
         image: new Icon(({
             anchor: [0.5, 18],
@@ -31160,13 +31161,13 @@
     });
     var vectorLayer = new VectorLayer({
         source: vectorSource,
-        mode: "stay"
+        type: "stay"
     });
     var map = new Map({
         layers: [
             new TileLayer({
                 source: new OSM(),
-                mode: "stay"
+                type: "stay"
             }),
             vectorLayer
         ],
@@ -31180,20 +31181,56 @@
         controls: defaults$1({ attribution: false })
     });
     map.on('click', function (evt) {
+        var f = map.forEachFeatureAtPixel(evt.pixel, function (ft, layer) { return ft; });
+        if (f && f.get('type') == 'added') {
+            var geometry = f.getGeometry();
+            geometry.getCoordinates();
+            var bid = f.get('id');
+            obj['points'].forEach(function (element) {
+                var ft = new Feature({
+                    id: element.id,
+                    geometry: new Point(fromLonLat([element.lonlat[0], element.lonlat[1]])),
+                    type: "added",
+                    text: element.text,
+                });
+                if (element.id == bid) {
+                    ft.setStyle(currentStyle);
+                    currentid = element.id;
+                    document.getElementById(element.id).style.backgroundColor = "lightgray";
+                }
+                else {
+                    ft.setStyle(activeStyle);
+                    document.getElementById(element.id).style.backgroundColor = "white";
+                }
+                var vss = new VectorSource({
+                    features: [ft],
+                });
+                var vll = new VectorLayer({
+                    source: vss,
+                });
+                map.addLayer(vll);
+            });
+        }
     });
     $(document).on('keydown', function (e) {
         if (e.key === "d") ;
     });
-    map.on('pointermove', function (e) {
-        var pixel = map.getEventPixel(e.originalEvent);
-        var hit = map.hasFeatureAtPixel(pixel);
-        map.getViewport().style.cursor = hit ? 'marker' : '';
-    });
-    var cid = 0;
-    var currentid = 0;
-    var points = [];
     var obj = {};
     obj.points = points;
+    $("button#remove").on('click', function () {
+        delete obj.points[currentid];
+        update();
+    });
+    map.on('pointermove', function (e) {
+        map.getViewport().style.cursor = 'default';
+        var pixel = map.getEventPixel(e.originalEvent);
+        map.hasFeatureAtPixel(pixel);
+        map.forEachFeatureAtPixel(pixel, function (feature, layer) {
+            if (feature.get('type') == "added") {
+                map.getViewport().style.cursor = 'pointer';
+            }
+        });
+    });
     map.on('contextmenu', function (e) {
         var coords = toLonLat(e.coordinate);
         var lat = coords[1];
@@ -31201,54 +31238,25 @@
         document.getElementById("map").style.cursor = "";
         var lonlat = [lon, lat];
         var point = {
+            "type": "click",
             "id": cid,
             "lonlat": lonlat,
             "text": "TEXT"
         };
         obj.points.push(point);
         cid += 1;
-        updatelist();
-        ploticons();
+        update();
     });
-    function ploticons() {
+    function update() {
         map.getLayers().getArray().slice().forEach(function (layer) {
-            if (layer && layer.get('mode') !== 'stay') {
-                map.removeLayer(layer);
-            }
-        });
-        obj['points'].forEach(function (element) {
-            var ft = new Feature({
-                geometry: new Point(fromLonLat([element.lonlat[0], element.lonlat[1]])),
-            });
-            if (element.id + 1 == cid) {
-                ft.setStyle(currentStyle);
-                currentid = element.id;
-                document.getElementById(element.id).style.backgroundColor = "lightgray";
-            }
-            else {
-                ft.setStyle(activeStyle);
-                document.getElementById(element.id).style.backgroundColor = "white";
-            }
-            var vss = new VectorSource({
-                features: [ft],
-            });
-            var vll = new VectorLayer({
-                source: vss,
-            });
-            map.addLayer(vll);
-        });
-    }
-    /* saveFile("data.json", "data:attachment/text", "Hello, world."); */
-    function updatelist() {
-        map.getLayers().getArray().slice().forEach(function (layer) {
-            if (layer && layer.get('mode') !== 'stay') {
+            if (layer && layer.get('type') !== 'stay') {
                 map.removeLayer(layer);
             }
         });
         var a = document.getElementById('lst');
         a.innerHTML = "";
         obj['points'].forEach(function (element) {
-            a.innerHTML += "<p id='" + element.id + "' class='hbtn'>" + element.id + " | " + element.lonlat + "</p>";
+            a.innerHTML += "<p id='" + element.id + "' class='hbtn'>" + element.id + "</p>";
         });
         var elements = document.getElementsByClassName("hbtn");
         Array.from(elements).forEach(function (element) {
@@ -31276,18 +31284,32 @@
                 });
             });
         });
-    }
-    $("button#remove").on('click', function () {
-        map.getLayers().getArray().slice().forEach(function (layer) {
-            if (layer && layer.get('mode') !== 'stay') {
-                map.removeLayer(layer);
+        obj['points'].forEach(function (element) {
+            var ft = new Feature({
+                id: element.id,
+                geometry: new Point(fromLonLat([element.lonlat[0], element.lonlat[1]])),
+                type: "added",
+                text: element.text,
+            });
+            if (element.id + 1 == cid) {
+                ft.setStyle(currentStyle);
+                currentid = element.id;
+                document.getElementById(element.id).style.backgroundColor = "lightgray";
             }
+            else {
+                ft.setStyle(activeStyle);
+                document.getElementById(element.id).style.backgroundColor = "white";
+            }
+            var vss = new VectorSource({
+                features: [ft],
+            });
+            var vll = new VectorLayer({
+                source: vss,
+            });
+            map.addLayer(vll);
         });
-        delete obj.points[currentid];
-        currentid = -1;
-        updatelist();
-        ploticons();
-    });
+    }
+    /* saveFile("data.json", "data:attachment/text", "Hello, world."); */
     document.getElementById('map').focus();
     document.getElementById('img');
 
