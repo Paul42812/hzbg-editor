@@ -30,18 +30,22 @@ html, body {
 
 #zk {
   width: 25%;
-  height: 100%;
+  height: 97%;
   background-color: lightblue;
   position: absolute;
-  bottom: 0;
-  right: 0;
+  top: 10px;
+  right: 10px;
+  margin-bottom: 10px;
   z-index: 10000;
+  border-radius: 10px;
+  border: 1px solid black;
 }
 
 #zk h2 {
   text-align: center;
-  margin: 0px;
-  margin-top: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #zk p {
@@ -54,9 +58,11 @@ html, body {
   overflow: hidden;
 }
 
-#lst {
+div#lst {
+  position: relative;
   overflow-y: auto;
-  height: 95%;
+  height: 45%;
+  width: 100%;
 }
 
 button#remove {
@@ -67,6 +73,14 @@ button#remove {
   width: 30px;
   height: 30px;
   margin: 10px;
-  border-radius: 3px;
+  border-radius: 5px;
   z-index: 100000;
+}
+
+div#prop input{
+  width: 12%;
+}
+
+form{
+  padding-left: 15px;
 }

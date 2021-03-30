@@ -31263,7 +31263,10 @@
             element.addEventListener('click', function () {
                 obj['points'].forEach(function (e) {
                     var ft = new Feature({
+                        id: element.id,
                         geometry: new Point(fromLonLat([e.lonlat[0], e.lonlat[1]])),
+                        type: "added",
+                        text: e.text
                     });
                     if (e.id == element.id) {
                         ft.setStyle(currentStyle);
